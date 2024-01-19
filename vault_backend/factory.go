@@ -85,6 +85,17 @@ func CreateBackend(b *JWKS_Vault_Backend) []*framework.Path {
 	paths := []*framework.Path{
 		engineConfigPath(b),
 		roleConfigPath(b),
+		credConfigPath(b),
+		//Test Reach
+		{
+			Pattern: "test",
+			Operations: map[logical.Operation]framework.OperationHandler{
+				logical.ReadOperation: &framework.PathOperation{
+					Callback: b.testReach,
+					Summary:  "Test Reach",
+				},
+			},
+		},
 	}
 
 	return paths
