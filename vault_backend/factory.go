@@ -96,6 +96,28 @@ func CreateBackend(b *JWKS_Vault_Backend) []*framework.Path {
 				},
 			},
 		},
+		{
+			Pattern: "test(?P<range>.*)",
+			Fields: map[string]*framework.FieldSchema{
+				"range": {
+					Type:        framework.TypeString,
+					Description: "The range.",
+				},
+			},
+			ExistenceCheck: func(ctx context.Context, req *logical.Request, data *framework.FieldData) (bool, error) {
+				return true, nil
+			},
+			Operations: map[logical.Operation]framework.OperationHandler{
+				logical.ReadOperation: &framework.PathOperation{
+					Callback: b.testReach2,
+					Summary:  "Test Reach",
+				},
+				logical.CreateOperation: &framework.PathOperation{
+					Callback: b.testReachPut2,
+					Summary:  "Test Reach",
+				},
+			},
+		},
 	}
 
 	return paths

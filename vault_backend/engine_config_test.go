@@ -22,8 +22,8 @@ func TestConfigWrite(t *testing.T) {
 
 	// Create a new request
 	req := &logical.Request{
-		Operation: logical.ReadOperation,
-		Path:      "config/5",
+		Operation: logical.CreateOperation,
+		Path:      "test/447",
 		Data:      data,
 		Storage:   storage,
 	}
@@ -40,6 +40,20 @@ func TestConfigWrite(t *testing.T) {
 	// ...
 	if resp == nil {
 		t.Fatalf("resp is nil")
+	}
+
+	req2 := &logical.Request{
+		Operation: logical.ReadOperation,
+		Path:      "test/1235",
+		Storage:   storage,
+		Data:      data,
+	}
+
+	resp2, err2 := b.HandleRequest(context.Background(), req2)
+	t.Log(resp2.Error())
+	t.Log(resp2.Data)
+	if err2 != nil {
+		t.Fatalf("err: %s", err2)
 	}
 
 }
