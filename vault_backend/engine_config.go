@@ -22,7 +22,7 @@ type EngineConfigStorage struct {
 
 func engineConfigPath(b *JWKS_Vault_Backend) *framework.Path {
 	var engineConfigPath = &framework.Path{
-		Pattern: "config/<engine-id>",
+		Pattern: "config/" + framework.GenericNameRegex("jwt_engine"),
 		Fields: map[string]*framework.FieldSchema{
 			"TTL": {
 				Type:        framework.TypeDurationSecond,

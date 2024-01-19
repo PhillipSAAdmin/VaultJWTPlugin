@@ -2,10 +2,16 @@ package vault_backend
 
 import (
 	"context"
+	"sync"
 
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 )
+
+type JWKS_Vault_Backend struct {
+	*framework.Backend
+	lock sync.RWMutex
+}
 
 func Factory(ctx context.Context, conf *logical.BackendConfig) (logical.Backend, error) {
 
@@ -54,7 +60,7 @@ func backend() *JWKS_Vault_Backend {
 						Description: "The token.",
 					},
 				},
-				//Renew:  b.secretTokenRenew,
+				Renew:  b.RenewCredentials,
 				Revoke: b.RevokeCredentials,
 			},
 		},

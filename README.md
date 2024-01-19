@@ -42,8 +42,8 @@ Returns Public Key IDs Corresponding to Private KEys
     [Default_Token_Exp]
 Engine-ID+keys:[]
     [ID]
-    [PRIVATE-KEY]
-    [PUBLIC-KEY]
+    [PRIVATE-KEY] (Deprecated)
+    [PUBLIC-KEY] (Deprecated)
 
 Role+[ROLE-ID]
     [ENGINE-ID]
@@ -51,9 +51,20 @@ Role+[ROLE-ID]
     [MAX_TTL]
     [ROLE]
 
+Credentials
+    Each Lease
+        Has A Keyid
+        And a Token
+    [privkey+uuid]
+    [publickey+uuid]
 
-CREDS -> How to Revoke -> You can't
-Renew -> ???
+    Lease Time : Max of Requested_TTL, Engine Configured TTL, Role MAX_TTL
+
+    Renewal -> Sign a New JWT With Initial Lease Options
+
+    Revocation -> Remove the Public Key From Storage -> Just For Now .... Need another way of verifying the Token 
+
+
 
 
         
