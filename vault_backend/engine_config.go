@@ -178,7 +178,8 @@ func (b *JWKS_Vault_Backend) EngineConfigWrite(ctx context.Context, req *logical
 func (b *JWKS_Vault_Backend) EngineConfigRead(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
 
 	//Get Authenticated Role of Vault USer
-	role := req.EntityID
+	//role := req.EntityID
+	role := data.Get("role").(string)
 
 	//Get ENgine Id From Path
 	jwt_engine := strings.Split(req.Path, "/")[1]
