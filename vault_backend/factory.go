@@ -2,10 +2,16 @@ package vault_backend
 
 import (
 	"context"
+	"sync"
 
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 )
+
+type JWKS_Vault_Backend struct {
+	*framework.Backend
+	lock sync.RWMutex
+}
 
 func Factory(ctx context.Context, conf *logical.BackendConfig) (logical.Backend, error) {
 
@@ -35,10 +41,6 @@ func (b *JWKS_Vault_Backend) pathRandomDelete(ctx context.Context, req *logical.
 	}, nil
 }
 
-func randomString(length int) {
-	panic("unimplemented")
-}
-
 func backend() *JWKS_Vault_Backend {
 	var b = JWKS_Vault_Backend{}
 	b.Backend = &framework.Backend{
@@ -48,79 +50,25 @@ func backend() *JWKS_Vault_Backend {
 				"config",
 			},
 		},
-		Paths: []*framework.Path{
-			// Add our paths here
-			{
-				Pattern: "random",
+		Paths: CreateBackend(&b),
+		Secrets: []*framework.Secret{
+			// token : string
+			{Type: "token",
 				Fields: map[string]*framework.FieldSchema{
-					"length": {
-						Type:        framework.TypeInt,
-						Description: "The length of the random string to generate",
-						Default:     123123,
-					},
-				},
-				Callbacks: map[logical.Operation]framework.OperationFunc{
-					logical.ReadOperation: b.pathRandom,
-					//logical.CreateOperation: b.pathRandomCreate,
-				},
-			},
-			{
-				Pattern: "config",
-				Fields: map[string]*framework.FieldSchema{
-					"random_string": {
+					"token": {
 						Type:        framework.TypeString,
-						Description: "The random string to generate",
-						Default:     "SDSDSD",
+						Description: "The token.",
 					},
 				},
-				Callbacks: map[logical.Operation]framework.OperationFunc{
-					logical.ReadOperation: b.randomConfigRead,
-					//logical.CreateOperation: b.pathRandomCreate,
-					//"create":              b.pathRandomCreate,
-					"update": b.pathRandomCreate,
-					//"delete":              b.pathRandomCreate,
-				},
-			},
-			{
-				Pattern: "config2",
-				Fields: map[string]*framework.FieldSchema{
-					"random_string": {
-						Type:        framework.TypeString,
-						Description: "The random string to generate",
-						Default:     "SDSDSD",
-					},
-				},
-				ExistenceCheck: b.checkExistence,
-				Operations: map[logical.Operation]framework.OperationHandler{
-
-					logical.ReadOperation: &framework.PathOperation{
-						Callback: b.randomConfigRead,
-						Summary:  "read Configuration Stufff",
-					},
-					logical.UpdateOperation: &framework.PathOperation{
-						Callback: b.pathRandomCreate,
-						Summary:  "update Configuration Stufff",
-					},
-					logical.CreateOperation: &framework.PathOperation{
-						Callback: b.pathRandomCreate,
-						Summary:  "create Configuration Stufff",
-					},
-					logical.DeleteOperation: &framework.PathOperation{
-						Callback: b.pathRandomDelete,
-						Summary:  "delete Configuration Stufff",
-					},
-				},
+				Renew:  b.RenewCredentials,
+				Revoke: b.RevokeCredentials,
 			},
 		},
-		Secrets:     []*framework.Secret{},
 		BackendType: logical.TypeLogical,
 	}
-
 	// Initialize our backend
 	//b.Backend.Initialize()
-
 	return &b
-
 }
 
 func (b *JWKS_Vault_Backend) randomConfigRead(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
@@ -132,13 +80,23 @@ func (b *JWKS_Vault_Backend) randomConfigRead(ctx context.Context, req *logical.
 	}, nil
 }
 
-func (b *JWKS_Vault_Backend) checkExistence(ctx context.Context, req *logical.Request, data *framework.FieldData) (bool, error) {
+func CreateBackend(b *JWKS_Vault_Backend) []*framework.Path {
 
-	// Check If The Key random_string exists
-	_, err := req.Storage.Get(ctx, "random_string")
-	if err != nil {
-		return false, err
+	paths := []*framework.Path{
+		engineConfigPath(b),
+		roleConfigPath(b),
+		credConfigPath(b),
+		//Test Reach
+		{
+			Pattern: "test",
+			Operations: map[logical.Operation]framework.OperationHandler{
+				logical.ReadOperation: &framework.PathOperation{
+					Callback: b.testReach,
+					Summary:  "Test Reach",
+				},
+			},
+		},
 	}
 
-	return true, nil
+	return paths
 }
