@@ -75,7 +75,15 @@ func engineConfigPath(b *JWKS_Vault_Backend) *framework.Path {
 func (b *JWKS_Vault_Backend) EngineConfigExistenceCheck(ctx context.Context, req *logical.Request, data *framework.FieldData) (bool, error) {
 	//Get Engine ID From Path (jwt_engine)
 	//jwt_engine := strings.Split(req.Path, "/")[1]
-	jwt_engine := req.Data["engineid"].(string)
+	//jwt_engine, ok := req.Data["engineid"].(string)
+	jwt_engine, ok := data.Get("engineid").(string)
+	if !ok {
+		return false, fmt.Errorf("No Engine ID Specified")
+	}
+
+	if jwt_engine == "" {
+		return false, fmt.Errorf("No Engine ID Specified")
+	}
 
 	// Check If Engine Exists
 	entry, err := req.Storage.Get(ctx, "config/"+jwt_engine)
@@ -190,7 +198,8 @@ func (b *JWKS_Vault_Backend) EngineConfigRead(ctx context.Context, req *logical.
 	//role := data.Get("role").(string)
 
 	//Get ENgine Id From Path
-	jwt_engine := strings.Split(req.Path, "/")[1]
+	//jwt_engine := strings.Split(req.Path, "/")[1]
+	jwt_engine := data.Get("engineid").(string)
 
 	// Get The Config (Previous Stored as logical.StorageEntryJSON)
 	entry, err := req.Storage.Get(ctx, "config/"+jwt_engine)

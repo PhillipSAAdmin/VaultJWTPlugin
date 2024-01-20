@@ -18,11 +18,16 @@ func checkConfigPath(b *JWKS_Vault_Backend) *framework.Path {
 				Description: "The JWT to check",
 			},
 		},
+		ExistenceCheck: b.CheckConfigExistence,
 		Callbacks: map[logical.Operation]framework.OperationFunc{
 			logical.ReadOperation: b.CheckConfigRead,
 		},
 	}
 	return checkConfigPath
+}
+
+func (b *JWKS_Vault_Backend) CheckConfigExistence(ctx context.Context, req *logical.Request, data *framework.FieldData) (bool, error) {
+	return true, nil
 }
 
 func (b *JWKS_Vault_Backend) CheckConfigRead(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {

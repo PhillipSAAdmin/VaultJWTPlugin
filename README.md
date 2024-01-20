@@ -67,6 +67,21 @@ Credentials
 
 
 
-        
+Example With Vault Dev:
+    go build -o jwks_plugin
+    cp jwks_plugin /.vault/plugins/plugin
+
+    vault server -dev -dev-plugin-dir=/.vault/plugins
+    export VAULT_ADDR="http://127.0.0.1:8200"
+    vault secrets enable -path=/myplugin -plugin-name=myplugin plugin
+
+    // Set Engine Config, id = cook
+    vault write myplugin/config/cook Allowed_Subjects="vault,user,sice" Issuer=vault Audience=vault TTL=3600
+
+    // Set Config For Role row, subject = bob 
+     vault write myplugin/role/row  TTL=1000 Subject=bob EngineId=cook
+
+     // Get Credentials With Read Access
+     vault read myplugin/cred/row  Requested_TTL=20
 
 
