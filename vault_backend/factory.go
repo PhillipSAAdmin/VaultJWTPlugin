@@ -86,6 +86,7 @@ func CreateBackend(b *JWKS_Vault_Backend) []*framework.Path {
 		engineConfigPath(b),
 		roleConfigPath(b),
 		credConfigPath(b),
+		checkConfigPath(b),
 		//Test Reach
 		{
 			Pattern: "test",

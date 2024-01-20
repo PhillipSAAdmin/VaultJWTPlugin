@@ -268,4 +268,28 @@ func TestConfigWrite2(t *testing.T) {
 		t.Errorf("Subject Does Not Match")
 	}
 
+	if claims["kid"] != keyid {
+		t.Errorf("Key ID Does Not Match")
+	}
+
+	//Now Use /verify to verify the token
+	verifyReq := &logical.Request{
+		Operation: logical.ReadOperation,
+		Path:      "verify",
+		Storage:   storage,
+		Data: map[string]interface{}{
+			"JWT": credsResp.Secret.InternalData["token"].(string),
+		},
+	}
+
+	verifyResp, verifyErr := b.HandleRequest(context.Background(), verifyReq)
+
+	if verifyErr != nil {
+		t.Fatalf("err: %s", verifyErr)
+	}
+
+	t.Log(verifyResp.Error())
+
+	t.Log(verifyResp.Data)
+
 }
