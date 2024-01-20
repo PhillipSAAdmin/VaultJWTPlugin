@@ -1,4 +1,4 @@
-package vault_backend
+package jwks_vault_util
 
 import (
 	"crypto/rand"
