@@ -122,36 +122,6 @@ func (b *JWKS_Vault_Backend) CredConfigRead(ctx context.Context, req *logical.Re
 	issuer := engine_config_struct.Issuer
 	audience := engine_config_struct.Audience
 
-	// Get the private key from the Key Storage
-	private_key_bytes, err := req.Storage.Get(ctx, "privatekey"+engine_name)
-	if err != nil {
-		return nil, err
-	}
-	//This
-	if private_key_bytes == nil {
-		return nil, fmt.Errorf("Private Key Does Not Exist")
-	}
-
-	privkeybytes := private_key_bytes.Value
-
-	//Go From The Bytes to the Private Key
-	private_key, err := jwt.ParseRSAPrivateKeyFromPEM(privkeybytes)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the public key from the Key Storage
-	public_key_bytes, err := req.Storage.Get(ctx, "publickey"+engine_name)
-	if err != nil {
-		return nil, err
-	}
-
-	//Go From The Bytes to the Public Key
-	public_key, err := jwt.ParseRSAPublicKeyFromPEM(public_key_bytes.Value)
-	if err != nil {
-		return nil, err
-	}
-
 	// Check if the role config exists
 	if role_config == nil {
 		return nil, fmt.Errorf("Role Config Does Not Exist")
@@ -160,16 +130,6 @@ func (b *JWKS_Vault_Backend) CredConfigRead(ctx context.Context, req *logical.Re
 	// Check if the backend config exists
 	if engine_config == nil {
 		return nil, fmt.Errorf("Backend Config Does Not Exist")
-	}
-
-	// Check if the private key exists
-	if private_key == nil {
-		return nil, fmt.Errorf("Private Key Does Not Exist")
-	}
-
-	// Check if the public key exists
-	if public_key == nil {
-		return nil, fmt.Errorf("Public Key Does Not Exist")
 	}
 
 	// Check if the subject exists
@@ -210,6 +170,7 @@ func (b *JWKS_Vault_Backend) CredConfigRead(ctx context.Context, req *logical.Re
 		Key:   "publickey" + keyid,
 		Value: pubKeyPem,
 	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +205,7 @@ func (b *JWKS_Vault_Backend) CredConfigRead(ctx context.Context, req *logical.Re
 	token.Claims = claims
 
 	// Sign the token with the private key
-	tokenString, err := token.SignedString(private_key)
+	tokenString, err := token.SignedString(privkey)
 
 	// Check if the token was signed
 	if err != nil {
@@ -273,6 +234,11 @@ func (b *JWKS_Vault_Backend) RevokeCredentials(ctx context.Context, req *logical
 	//Remove Existence of UUID Key That Signed the credentials
 	key := req.Secret.InternalData["key_uuid"]
 	err := req.Storage.Delete(ctx, "publickey"+key.(string))
+
+	if err != nil {
+		return nil, err
+	}
+	err = req.Storage.Delete(ctx, "privatekey"+key.(string))
 	if err != nil {
 		return nil, err
 	}

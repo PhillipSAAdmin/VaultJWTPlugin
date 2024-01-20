@@ -2,8 +2,10 @@ package vault_backend
 
 import (
 	"context"
+	"crypto/rsa"
 	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"testing"
 
@@ -197,21 +199,40 @@ func TestConfigWrite2(t *testing.T) {
 	t.Log(credsResp.Data)
 
 	keyid := credsResp.Secret.InternalData["key_uuid"]
+	if keyid == nil {
+		t.Errorf("No Key ID Found")
+	}
+
+	t.Log(keyid)
 	// Get the public key from the storage
 	entry, err := storage.Get(context.Background(), fmt.Sprintf("publickey%s", keyid))
 	if err != nil {
-		t.Errorf("Error Getting Public Key  %s From Storage", credsResp.Data["kid"])
+		t.Errorf("Error Getting Public Key  %s From Storage", keyid)
 	}
 
-	t.Log(entry)
+	if entry == nil {
+		t.Errorf("No Public Key Found For %s", keyid)
+	}
+
+	t.Log(string(entry.Value))
 
 	// Get the public key from the storage
 	pubkey := entry.Value
 	//Conver Bytes to rsa.PrivateKey
-	rsapubkey, err := x509.ParsePKIXPublicKey(pubkey)
-	if err != nil {
-		t.Errorf("Error Parsing Public Key  %s From Storage", credsResp.Data["kid"])
+	block, _ := pem.Decode(pubkey)
+	if block == nil || block.Type != "RSA PUBLIC KEY" {
+		t.Errorf("Failed to decode PEM block containing public key")
+		return
 	}
+
+	rsapubkey, err := x509.ParsePKIXPublicKey(block.Bytes)
+	//x509.ParsePKCS1PublicKey()
+
+	if err != nil {
+		t.Errorf("Error Parsing Public Key %s From entry value", keyid)
+	}
+
+	PublicRsaKey := rsapubkey.(*rsa.PublicKey)
 
 	// Verify Token Signature
 	token, err := jwt.Parse(credsResp.Secret.InternalData["token"].(string), func(token *jwt.Token) (interface{}, error) {
@@ -220,7 +241,7 @@ func TestConfigWrite2(t *testing.T) {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 		}
 		// Return the public key
-		return rsapubkey, nil
+		return PublicRsaKey, nil
 	})
 	if err != nil {
 		t.Errorf("Error Parsing Token %s", credsResp.Secret.InternalData["token"].(string))
@@ -233,17 +254,17 @@ func TestConfigWrite2(t *testing.T) {
 	}
 
 	// Check Issuer
-	if claims["iss"] != data2["issuer"] {
+	if claims["iss"] != data["Issuer"] {
 		t.Errorf("Issuer Does Not Match")
 	}
 
 	// Check Audience
-	if claims["aud"] != data2["audience"] {
+	if claims["aud"] != data["Audience"] {
 		t.Errorf("Audience Does Not Match")
 	}
 
 	// Check Subject
-	if claims["sub"] != roleData["subject"] {
+	if claims["sub"] != roleData["Subject"] {
 		t.Errorf("Subject Does Not Match")
 	}
 
