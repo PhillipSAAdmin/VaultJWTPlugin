@@ -73,7 +73,7 @@ Example With Vault Dev:
 
     vault server -dev -dev-plugin-dir=/.vault/plugins
     export VAULT_ADDR="http://127.0.0.1:8200"
-    vault secrets enable -path=/myplugin -plugin-name=myplugin plugin
+    vault secrets enable -path=/jwks_plugin -plugin-name=mypugin plugin
 
     // Set Engine Config, id = cook
     vault write myplugin/config/cook Allowed_Subjects="vault,user,sice" Issuer=vault Audience=vault TTL=3600
