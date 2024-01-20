@@ -212,8 +212,20 @@ func (b *JWKS_Vault_Backend) CredConfigRead(ctx context.Context, req *logical.Re
 		return nil, fmt.Errorf("Token Could Not Be Signed")
 	}
 
+	res := b.Secret("token").Response(map[string]interface{}{
+		"token":    tokenString,
+		"key_uuid": keyid,
+	}, map[string]interface{}{
+		"token":    tokenString,
+		"key_uuid": keyid,
+	})
+
+	res.Secret.TTL = time.Duration(requested_ttl) * time.Second
+
+	return res, nil
+
 	// Return the token
-	return &logical.Response{
+	/*return &logical.Response{
 		Secret: &logical.Secret{
 			LeaseOptions: logical.LeaseOptions{
 				TTL: time.Duration(requested_ttl) * time.Second,
@@ -224,15 +236,21 @@ func (b *JWKS_Vault_Backend) CredConfigRead(ctx context.Context, req *logical.Re
 			},
 		},
 		Data: map[string]interface{}{
-			"token": tokenString,
+			"token":    tokenString,
+			"key_uuid": keyid,
 		},
 	}, nil
+	*/
 
 }
 
 func (b *JWKS_Vault_Backend) RevokeCredentials(ctx context.Context, req *logical.Request, d *framework.FieldData) (*logical.Response, error) {
 	//Remove Existence of UUID Key That Signed the credentials
 	key := req.Secret.InternalData["key_uuid"]
+
+	if key == nil {
+		return nil, fmt.Errorf("No Key UUID Found")
+	}
 	err := req.Storage.Delete(ctx, "publickey"+key.(string))
 
 	if err != nil {

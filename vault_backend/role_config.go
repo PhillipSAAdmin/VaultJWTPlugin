@@ -24,8 +24,9 @@ func roleConfigPath(b *JWKS_Vault_Backend) *framework.Path {
 				Type:        framework.TypeString,
 				Description: "The role id",
 			},
-			string(enumerations.RoleConfigTTL): {
-				Type:        framework.TypeDurationSecond,
+			//string(enumerations.RoleConfigTTL): {
+			"TTL": {
+				Type:        framework.TypeInt,
 				Description: "The TTL for the token",
 			},
 			string(enumerations.RoleConfigSubject): {
@@ -64,7 +65,11 @@ func (b *JWKS_Vault_Backend) RoleConfigExistenceCheck(ctx context.Context, req *
 	// Get Role ID From Path (role_id)
 	//role_id := strings.Split(req.Path, "/")[2]
 
-	role_id := req.Data[string(enumerations.RoleConfigRoleid)].(string)
+	//role_id, ok := req.Data[string(enumerations.RoleConfigRoleid)].(string)
+	role_id, ok := data.Get("roleid").(string) //req.Data[string(enumerations.RoleConfigRoleid)].(string)
+	if !ok {
+		return false, fmt.Errorf("No %s found, Or Not String", string(enumerations.RoleConfigRoleid))
+	}
 
 	// Get The Config (Previous Stored as logical.StorageEntryJSON)
 	entry, err := req.Storage.Get(ctx, "user"+role_id)
@@ -84,9 +89,11 @@ func (b *JWKS_Vault_Backend) RoleConfigWrite(ctx context.Context, req *logical.R
 	// Want to Write Configuration Parameters to the Storage Backend
 
 	// Max TTL to Request
-	max_ttl, ok := req.Data[string(enumerations.RoleConfigTTL)].(int)
+	//max_ttl, ok := req.Data[string(enumerations.RoleConfigTTL)].(int)
+	max_ttl, ok := req.Data["TTL"].(int)
 	if !ok {
-		return nil, fmt.Errorf("No %s found, Or Not Int", string(enumerations.RoleConfigTTL))
+		max_ttl = 1800
+		//return nil, fmt.Errorf("No %s found, Or Not Int", string(enumerations.RoleConfigTTL))
 	}
 
 	// Subject For Role

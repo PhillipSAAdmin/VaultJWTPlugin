@@ -3,6 +3,14 @@ module github.com/PhillipSAAdmin/JWKS_VAULT_PLUGIN
 go 1.21.1
 
 require (
+	github.com/golang-jwt/jwt v3.2.2+incompatible
+	github.com/google/uuid v1.5.0
+	github.com/hashicorp/go-hclog v1.5.0
+	github.com/hashicorp/vault/api v1.10.0
+	github.com/hashicorp/vault/sdk v0.10.2
+)
+
+require (
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
@@ -16,13 +24,10 @@ require (
 	github.com/fatih/color v1.14.1 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/uuid v1.5.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-hclog v1.5.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
 	github.com/hashicorp/go-kms-wrapping/entropy/v2 v2.0.0 // indirect
 	github.com/hashicorp/go-kms-wrapping/v2 v2.0.8 // indirect
@@ -39,8 +44,6 @@ require (
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/hcl v1.0.1-vault-5 // indirect
-	github.com/hashicorp/vault/api v1.10.0 // indirect
-	github.com/hashicorp/vault/sdk v0.10.2 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect

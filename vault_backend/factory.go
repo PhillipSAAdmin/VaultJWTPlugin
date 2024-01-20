@@ -47,7 +47,9 @@ func backend() *JWKS_Vault_Backend {
 		Help: "Generate a Random Key That Delegates Tokens For a Path",
 		PathsSpecial: &logical.Paths{
 			SealWrapStorage: []string{
-				"config",
+				"config/",
+				"role/",
+				"cred/",
 			},
 		},
 		Paths: CreateBackend(&b),
@@ -58,6 +60,10 @@ func backend() *JWKS_Vault_Backend {
 					"token": {
 						Type:        framework.TypeString,
 						Description: "The token.",
+					},
+					"key_uuid": {
+						Type:        framework.TypeString,
+						Description: "The key uuid.",
 					},
 				},
 				Renew:  b.RenewCredentials,
