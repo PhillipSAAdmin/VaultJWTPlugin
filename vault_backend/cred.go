@@ -18,11 +18,16 @@ func credConfigPath(b *JWKS_Vault_Backend) *framework.Path {
 	// This is the path that will be used grant credentials
 
 	var credConfigPath = &framework.Path{
-		Pattern: "config/cred/<role-id>",
+		Pattern: "cred/(?P<roleid>.*)",
 		Fields: map[string]*framework.FieldSchema{
+			"roleid": {
+				Type:        framework.TypeString,
+				Description: "The role id",
+			},
 			"Requested_TTL": {
 				Type:        framework.TypeDurationSecond,
 				Description: "The TTL for the token",
+				Default:     3600,
 			},
 		},
 		Operations: map[logical.Operation]framework.OperationHandler{
@@ -60,27 +65,32 @@ func credConfigPath(b *JWKS_Vault_Backend) *framework.Path {
  */
 func (b *JWKS_Vault_Backend) CredConfigRead(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
 	// Get the role-id from the request
-	role_id := data.Get("role-id").(string)
+	role_id, ok := data.Get("roleid").(string)
+	if !ok {
+		return nil, fmt.Errorf("Role ID Not Found")
+	}
 	// Get the role config from the storage
-	role_config, err := req.Storage.Get(ctx, "role/"+role_id)
+	role_config, err := req.Storage.Get(ctx, "user"+role_id)
 	if err != nil {
 		return nil, err
 	}
-	// Get the backend config from the storage
-	backend_config, err := req.Storage.Get(ctx, "config")
-	if err != nil {
-		return nil, err
+	if role_config == nil {
+		return nil, fmt.Errorf("Role Config Does Not Exist")
 	}
+	// Unmarshal the role confi
 
 	var role_config_struct RoleConfigStorage
 
 	err = role_config.DecodeJSON(&role_config_struct)
+	if err != nil {
+		return nil, err
+	}
 
 	// Get the engine name from the role config
 	engine_name := role_config_struct.Engine
 
 	// Get the Engine Config from the engine_name
-	engine_config, err := req.Storage.Get(ctx, "engine/"+engine_name)
+	engine_config, err := req.Storage.Get(ctx, "config/"+engine_name)
 	if err != nil {
 		return nil, err
 	}
@@ -89,12 +99,18 @@ func (b *JWKS_Vault_Backend) CredConfigRead(ctx context.Context, req *logical.Re
 
 	// Unmarshal the backend config
 	err = engine_config.DecodeJSON(&engine_config_struct)
+	if err != nil {
+		return nil, err
+	}
 
 	//Find Limiting TTL
 	limiting_ttl := min(role_config_struct.Max_TTL, engine_config_struct.TTL)
 
 	// Get the requested TTL from the request
-	requested_ttl := data.Get("Requested_TTL").(int)
+	requested_ttl, ok := data.Get("Requested_TTL").(int)
+	if !ok {
+		return nil, fmt.Errorf("Requested TTL Not Found")
+	}
 
 	// Check if valid requested TTL
 	if requested_ttl > limiting_ttl {
@@ -106,45 +122,14 @@ func (b *JWKS_Vault_Backend) CredConfigRead(ctx context.Context, req *logical.Re
 	issuer := engine_config_struct.Issuer
 	audience := engine_config_struct.Audience
 
-	// Get the private key from the Key Storage
-	private_key_bytes, err := req.Storage.Get(ctx, "privatekey"+engine_name)
-	if err != nil {
-		return nil, err
-	}
-
-	//Go From The Bytes to the Private Key
-	private_key, err := jwt.ParseRSAPrivateKeyFromPEM(private_key_bytes.Value)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the public key from the Key Storage
-	public_key_bytes, err := req.Storage.Get(ctx, "publickey"+engine_name)
-	if err != nil {
-		return nil, err
-	}
-
-	//Go From The Bytes to the Public Key
-	public_key, err := jwt.ParseRSAPublicKeyFromPEM(public_key_bytes.Value)
-
 	// Check if the role config exists
 	if role_config == nil {
 		return nil, fmt.Errorf("Role Config Does Not Exist")
 	}
 
 	// Check if the backend config exists
-	if backend_config == nil {
+	if engine_config == nil {
 		return nil, fmt.Errorf("Backend Config Does Not Exist")
-	}
-
-	// Check if the private key exists
-	if private_key == nil {
-		return nil, fmt.Errorf("Private Key Does Not Exist")
-	}
-
-	// Check if the public key exists
-	if public_key == nil {
-		return nil, fmt.Errorf("Public Key Does Not Exist")
 	}
 
 	// Check if the subject exists
@@ -181,10 +166,14 @@ func (b *JWKS_Vault_Backend) CredConfigRead(ctx context.Context, req *logical.Re
 	)
 
 	// Store at key+keyid
-	req.Storage.Put(ctx, &logical.StorageEntry{
+	err = req.Storage.Put(ctx, &logical.StorageEntry{
 		Key:   "publickey" + keyid,
 		Value: pubKeyPem,
 	})
+
+	if err != nil {
+		return nil, err
+	}
 
 	// Store Private Key Bytes
 	privKeyBytes := x509.MarshalPKCS1PrivateKey(privkey)
@@ -196,10 +185,14 @@ func (b *JWKS_Vault_Backend) CredConfigRead(ctx context.Context, req *logical.Re
 	)
 
 	// Store at privkey+keyid
-	req.Storage.Put(ctx, &logical.StorageEntry{
+	err = req.Storage.Put(ctx, &logical.StorageEntry{
 		Key:   "privatekey" + keyid,
 		Value: privKeyPem,
 	})
+
+	if err != nil {
+		return nil, err
+	}
 
 	claims["iat"] = time.Now().Unix()
 	claims["nbf"] = time.Now().Unix()
@@ -212,7 +205,7 @@ func (b *JWKS_Vault_Backend) CredConfigRead(ctx context.Context, req *logical.Re
 	token.Claims = claims
 
 	// Sign the token with the private key
-	tokenString, err := token.SignedString(private_key)
+	tokenString, err := token.SignedString(privkey)
 
 	// Check if the token was signed
 	if err != nil {
@@ -241,6 +234,11 @@ func (b *JWKS_Vault_Backend) RevokeCredentials(ctx context.Context, req *logical
 	//Remove Existence of UUID Key That Signed the credentials
 	key := req.Secret.InternalData["key_uuid"]
 	err := req.Storage.Delete(ctx, "publickey"+key.(string))
+
+	if err != nil {
+		return nil, err
+	}
+	err = req.Storage.Delete(ctx, "privatekey"+key.(string))
 	if err != nil {
 		return nil, err
 	}
