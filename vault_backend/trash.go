@@ -47,7 +47,8 @@ func (b *JWKS_Vault_Backend) testReachPut2(ctx context.Context, req *logical.Req
 	//Get [range] pathParameter
 	//ranger, ok := data.GetOk("range")
 
-	ranger := strings.Split(req.Path, "/")[1]
+	//ranger := strings.Split(req.Path, "/")[1]
+	ranger := data.Get("range").(string)
 
 	//Put Storage Random Key
 	err := req.Storage.Put(ctx, &logical.StorageEntry{
